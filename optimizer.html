@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Resource & Fine Optimizer — KGCE Library</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .optimizer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 768px) { .optimizer-grid { grid-template-columns: 1fr; } }
+
+    .tool-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      padding: 32px;
+      backdrop-filter: blur(16px);
+      transition: border-color 0.3s;
+    }
+    .tool-card:hover { border-color: var(--border); }
+
+    .tool-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; margin-bottom: 18px;
+    }
+    .tool-icon-gold  { background: rgba(201,169,79,0.12); border: 1px solid var(--border); }
+    .tool-icon-green { background: rgba(52,211,153,0.1);  border: 1px solid rgba(52,211,153,0.25); }
+
+    .tool-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .tool-desc  { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
+
+    .result-box { border-radius: 12px; padding: 20px; margin-top: 20px; display: none; }
+    .result-box.show { display: block; }
+    .result-box-success { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.25); }
+    .result-box-error   { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); }
+    .result-box-warn    { background: rgba(251,191,36,0.08);  border: 1px solid rgba(251,191,36,0.25); }
+
+    .result-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+    .result-box-success .result-title { color: var(--green); }
+    .result-box-error   .result-title { color: var(--red); }
+    .result-box-warn    .result-title { color: var(--yellow); }
+
+    .result-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.84rem;
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row-label { color: var(--muted); }
+    .result-row-value { color: var(--white); font-weight: 600; }
+
+    .fine-total {
+      margin-top: 16px; padding: 16px; border-radius: 10px;
+      background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .fine-total-label { font-size: 0.85rem; color: var(--muted); }
+    .fine-total-value { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; color: var(--red); }
+    .fine-zero { color: var(--green) !important; }
+
+    .elig-status { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 12px; margin-top: 8px; }
+    .elig-status-icon { font-size: 28px; }
+    .elig-status-text { font-size: 0.88rem; line-height: 1.5; }
+    .elig-status-text strong { display: block; font-size: 1rem; margin-bottom: 2px; }
+    .elig-eligible   { background: rgba(52,211,153,0.1);  border: 1px solid rgba(52,211,153,0.25); }
+    .elig-ineligible { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25); }
+    .elig-eligible   .elig-status-text strong { color: var(--green); }
+    .elig-ineligible .elig-status-text strong { color: var(--red); }
+    .elig-eligible   .elig-status-text        { color: rgba(52,211,153,0.8); }
+    .elig-ineligible .elig-status-text        { color: rgba(248,113,113,0.8); }
+
+    .usage-bar-wrap { margin: 8px 0 4px; }
+    .usage-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; }
+    .usage-bar { height: 8px; border-radius: 100px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .usage-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--gold), var(--gold2)); transition: width 0.6s ease; }
+    .usage-bar-fill.danger { background: linear-gradient(90deg, #f87171, #fca5a5); }
+
+    .summary-banner {
+      background: linear-gradient(135deg, rgba(201,169,79,0.1), rgba(201,169,79,0.04));
+      border: 1px solid var(--border); border-radius: 16px; padding: 28px 32px;
+      display: flex; align-items: center; gap: 24px; margin-bottom: 32px;
+    }
+    .summary-banner-icon { font-size: 40px; }
+    .summary-banner-text h2 { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--white); margin-bottom: 4px; }
+    .summary-banner-text p  { font-size: 0.82rem; color: var(--muted); }
+
+    .divider-section { display: flex; align-items: center; gap: 16px; margin: 32px 0 24px; }
+    .divider-section-line  { flex: 1; height: 1px; background: var(--border2); }
+    .divider-section-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-logo" href="dashboard.html">
+    <div class="nav-logo-icon">📚</div>
+    <div class="nav-logo-text">KGCE <span>Library</span></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="dashboard.html">🏠 Dashboard</a>
+    <a class="nav-link active" href="optimizer.html">⚡ Optimizer</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">Welcome, <span id="nav-name">User</span></div>
+    <button class="btn-logout" onclick="logoutUser()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-lg">
+
+    <!-- Header -->
+    <div class="page-header anim-1">
+      <span class="page-header-label">Smart Tools</span>
+      <h1>Resource &amp; Fine Optimizer</h1>
+      <p>Check your borrowing eligibility and calculate any outstanding fines instantly.</p>
+    </div>
+
+    <!-- Summary Banner -->
+    <div class="summary-banner anim-2" id="user-summary">
+      <div class="summary-banner-icon">🎓</div>
+      <div class="summary-banner-text">
+        <h2 id="summary-name">Loading...</h2>
+        <p id="summary-info">Fetching your account details...</p>
+      </div>
+    </div>
+
+    <!-- Two Tool Cards -->
+    <div class="optimizer-grid anim-3">
+
+      <!-- ELIGIBILITY CHECKER -->
+      <div class="tool-card">
+        <div class="tool-icon tool-icon-green">✅</div>
+        <div class="tool-title">Eligibility Checker</div>
+        <div class="tool-desc">Check if you are eligible to borrow more books based on your current usage and outstanding fines.</div>
+
+        <div class="field">
+          <label>Select User</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <select id="elig-user">
+              <option value="">-- Select a user --</option>
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+        </div>
+
+        <button class="btn btn-success btn-full" onclick="checkEligibility()">Check Eligibility →</button>
+        <div id="elig-result" style="margin-top:20px; display:none"></div>
+      </div>
+
+      <!-- FINE CALCULATOR -->
+      <div class="tool-card">
+        <div class="tool-icon tool-icon-gold">💰</div>
+        <div class="tool-title">Fine Calculator</div>
+        <div class="tool-desc">Calculate the exact fine amount for any overdue book based on the issue date and current date.</div>
+
+        <!-- Book Name -->
+        <div class="field">
+          <label>Book Name</label>
+          <div class="input-wrap">
+            <span class="input-icon">📖</span>
+            <input type="text" id="calc-book-name" placeholder="Enter book name"/>
+          </div>
+        </div>
+
+        <!-- Issue Date -->
+        <div class="field">
+          <label>Issue Date</label>
+          <div class="input-wrap">
+            <span class="input-icon">📅</span>
+            <input type="date" id="calc-issue-date"/>
+          </div>
+        </div>
+
+        <!-- Return Date -->
+        <div class="field">
+          <label>Return Date (or Today)</label>
+          <div class="input-wrap">
+            <span class="input-icon">📅</span>
+            <input type="date" id="calc-return-date"/>
+          </div>
+        </div>
+
+        <button class="btn btn-gold btn-full" onclick="calculateFineManual()">Calculate Fine →</button>
+        <div id="fine-result" class="result-box" style="margin-top:20px"></div>
+      </div>
+
+    </div>
+
+    <!-- DIVIDER -->
+    <div class="divider-section anim-4">
+      <div class="divider-section-line"></div>
+      <div class="divider-section-label">📊 My Resource Usage</div>
+      <div class="divider-section-line"></div>
+    </div>
+
+    <!-- RESOURCE USAGE -->
+    <div class="card anim-4" style="margin-bottom:24px">
+      <h2 style="font-family:'Playfair Display',serif; font-size:1.05rem; color:var(--white); margin-bottom:24px">
+        📦 Your Borrowing Overview
+      </h2>
+      <div id="resource-overview"></div>
+    </div>
+
+    <!-- MY ACTIVE FINES -->
+    <div class="card anim-4">
+      <h2 style="font-family:'Playfair Display',serif; font-size:1.05rem; color:var(--white); margin-bottom:24px">
+        💸 Active Fine Breakdown
+      </h2>
+      <div id="fine-breakdown"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  const user = getCurrentUser();
+  if (!user || user.role === 'admin') window.location.href = 'index.html';
+
+  const MAX_BOOKS = 3;
+  const MAX_FINE  = 100;
+
+  document.getElementById('nav-name').textContent = user.name.split(' ')[0];
+
+  async function loadSummary() {
+    const issuesAll = await getIssuesApi();
+    const issues = issuesAll.filter(i => i.userId === user.id && !i.returned);
+    let totalFine = 0;
+    issues.forEach(i => totalFine += calculateFineSync(i.issueDate));
+    document.getElementById('summary-name').textContent = user.name + ' — ' + user.type.charAt(0).toUpperCase() + user.type.slice(1);
+    document.getElementById('summary-info').textContent = `${user.dept} · ${issues.length} book(s) borrowed · ₹${totalFine} fine pending`;
+  }
+
+  async function loadEligUsers() {
+    const users  = await getUsersApi();
+    const select = document.getElementById('elig-user');
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = u.name + ' (' + u.type + ')';
+      if (u.id === user.id) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  async function checkEligibility() {
+    const userId = document.getElementById('elig-user').value;
+    if (!userId) { alert('Please select a user.'); return; }
+    const users  = await getUsersApi();
+    const u      = users.find(x => x.id === userId);
+    const issuesAll = await getIssuesApi();
+    const issues = issuesAll.filter(i => i.userId === userId && !i.returned);
+    const books  = await getBooksApi();
+    let fine     = 0;
+    issues.forEach(i => fine += calculateFineSync(i.issueDate));
+    const borrowed    = issues.length;
+    const hasOverdue  = issues.some(i => calculateFineSync(i.issueDate) > 0);
+    const fineBlocked = fine >= MAX_FINE;
+    const bookBlocked = borrowed >= MAX_BOOKS;
+    const eligible    = !fineBlocked && !bookBlocked;
+    const reasons = [];
+    if (fineBlocked) reasons.push(`Outstanding fine ₹${fine} exceeds limit of ₹${MAX_FINE}`);
+    if (bookBlocked) reasons.push(`Already borrowed maximum ${MAX_BOOKS} books`);
+    if (hasOverdue && !fineBlocked) reasons.push(`Has overdue books — please return them soon`);
+    const el = document.getElementById('elig-result');
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div class="elig-status ${eligible ? 'elig-eligible' : 'elig-ineligible'}">
+        <div class="elig-status-icon">${eligible ? '✅' : '❌'}</div>
+        <div class="elig-status-text">
+          <strong>${eligible ? 'Eligible to Borrow' : 'Not Eligible'}</strong>
+          ${eligible ? `${u.name} can borrow up to ${MAX_BOOKS - borrowed} more book(s).` : reasons.join('<br>')}
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="usage-bar-wrap">
+          <div class="usage-bar-label"><span>Books Borrowed</span><span>${borrowed} / ${MAX_BOOKS}</span></div>
+          <div class="usage-bar"><div class="usage-bar-fill ${bookBlocked ? 'danger' : ''}" style="width:${Math.min(100,(borrowed/MAX_BOOKS)*100)}%"></div></div>
+        </div>
+        <div class="usage-bar-wrap" style="margin-top:12px">
+          <div class="usage-bar-label"><span>Fine Accumulated</span><span>₹${fine} / ₹${MAX_FINE}</span></div>
+          <div class="usage-bar"><div class="usage-bar-fill ${fineBlocked ? 'danger' : ''}" style="width:${Math.min(100,(fine/MAX_FINE)*100)}%"></div></div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        ${issues.map(i => {
+          const b = books.find(b => b.id === i.bookId);
+          const f = calculateFineSync(i.issueDate);
+          return `<div class="result-row">
+            <span class="result-row-label">📖 ${b ? b.title : 'Unknown'}</span>
+            <span class="result-row-value">${f > 0 ? `<span style="color:var(--red)">₹${f} fine</span>` : `<span style="color:var(--green)">On time</span>`}</span>
+          </div>`;
+        }).join('') || `<div class="result-row"><span class="result-row-label">No active issues</span></div>`}
+      </div>`;
+  }
+
+  function calculateFineManual() {
+    const bookName  = document.getElementById('calc-book-name').value.trim();
+    const issueStr  = document.getElementById('calc-issue-date').value;
+    const returnStr = document.getElementById('calc-return-date').value;
+    const el        = document.getElementById('fine-result');
+
+    if (!issueStr || !returnStr) {
+      el.className = 'result-box result-box-warn show';
+      el.innerHTML = `<div class="result-title">⚠️ Missing Dates</div><p style="font-size:0.84rem;color:var(--yellow)">Please select both issue date and return date.</p>`;
+      return;
+    }
+
+    const issueDate  = new Date(issueStr);
+    const returnDate = new Date(returnStr);
+    const dueDate    = new Date(issueDate);
+    dueDate.setDate(dueDate.getDate() + LOAN_DAYS);
+
+    if (returnDate < issueDate) {
+      el.className = 'result-box result-box-error show';
+      el.innerHTML = `<div class="result-title">❌ Invalid Dates</div><p style="font-size:0.84rem;color:var(--red)">Return date cannot be before issue date.</p>`;
+      return;
+    }
+
+    const overdueDays = Math.max(0, Math.floor((returnDate - dueDate) / (1000 * 60 * 60 * 24)));
+    const fine        = overdueDays * FINE_PER_DAY;
+    const loanDays    = Math.floor((returnDate - issueDate) / (1000 * 60 * 60 * 24));
+
+    el.className = `result-box ${fine > 0 ? 'result-box-error' : 'result-box-success'} show`;
+    el.innerHTML = `
+      <div class="result-title">${fine > 0 ? '💰 Fine Calculated' : '✅ No Fine'}</div>
+      <div class="result-row">
+        <span class="result-row-label">📖 Book Name</span>
+        <span class="result-row-value">${bookName || 'Not specified'}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-label">Issue Date</span>
+        <span class="result-row-value">${formatDate(issueStr)}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-label">Due Date</span>
+        <span class="result-row-value">${formatDate(dueDate.toISOString().split('T')[0])}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-label">Return Date</span>
+        <span class="result-row-value">${formatDate(returnStr)}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-label">Total Loan Days</span>
+        <span class="result-row-value">${loanDays} days</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-label">Overdue Days</span>
+        <span class="result-row-value">${overdueDays} days</span>
+      </div>
+      <div class="result-row">
+        <span class="result-row-label">Fine Rate</span>
+        <span class="result-row-value">₹${FINE_PER_DAY}/day</span>
+      </div>
+      <div class="fine-total">
+        <span class="fine-total-label">Total Fine</span>
+        <span class="fine-total-value ${fine === 0 ? 'fine-zero' : ''}">₹${fine}</span>
+      </div>`;
+  }
+
+  async function loadResourceOverview() {
+    const issuesAll = await getIssuesApi();
+    const issues   = issuesAll.filter(i => i.userId === user.id && !i.returned);
+    const books    = await getBooksApi();
+    const borrowed = issues.length;
+    const el       = document.getElementById('resource-overview');
+    el.innerHTML = `
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
+        <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-value">${borrowed}</div><div class="stat-label">Books Borrowed</div></div>
+        <div class="stat-card"><div class="stat-icon">📬</div><div class="stat-value">${MAX_BOOKS - borrowed}</div><div class="stat-label">Can Still Borrow</div></div>
+      </div>
+      <div class="usage-bar-wrap">
+        <div class="usage-bar-label"><span>Borrowing Capacity Used</span><span>${borrowed} of ${MAX_BOOKS} books</span></div>
+        <div class="usage-bar"><div class="usage-bar-fill ${borrowed >= MAX_BOOKS ? 'danger' : ''}" style="width:${Math.min(100,(borrowed/MAX_BOOKS)*100)}%"></div></div>
+      </div>
+      ${borrowed === 0
+        ? `<div class="empty-state" style="padding:32px"><div class="empty-icon">📭</div><p>No active borrowings.</p></div>`
+        : `<div style="margin-top:20px">${issues.map(i => {
+            const b    = books.find(b => b.id === i.bookId);
+            const fine = calculateFineSync(i.issueDate);
+            const days = Math.floor((new Date() - new Date(i.dueDate)) / (1000*60*60*24));
+            return `<div class="result-row">
+              <span class="result-row-label">📖 ${b ? b.title : 'Unknown'}</span>
+              <span class="result-row-value">${fine > 0 ? `<span class="badge badge-red">Overdue ${days}d</span>` : `<span class="badge badge-green">On Time</span>`}</span>
+            </div>`;
+          }).join('')}</div>`}`;
+  }
+
+  async function loadFineBreakdown() {
+    const issuesAll = await getIssuesApi();
+    const issues   = issuesAll.filter(i => i.userId === user.id && !i.returned);
+    const books    = await getBooksApi();
+    const el       = document.getElementById('fine-breakdown');
+    const withFine = issues.filter(i => calculateFineSync(i.issueDate) > 0);
+    let total      = 0;
+    if (!withFine.length) {
+      el.innerHTML = `<div class="empty-state" style="padding:32px"><div class="empty-icon">🎉</div><p>No fines! All your books are within the due date.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Book</th><th>Due Date</th><th>Days Overdue</th><th>Fine (₹5/day)</th></tr></thead>
+          <tbody>
+            ${withFine.map(i => {
+              const b    = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              const days = Math.floor(fine / FINE_PER_DAY);
+              total     += fine;
+              return `<tr>
+                <td><strong style="color:var(--white)">${b ? b.title : 'Unknown'}</strong></td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td><span class="badge badge-yellow">${days} days</span></td>
+                <td><span class="badge badge-red">₹${fine}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="fine-total" style="margin-top:20px">
+        <span class="fine-total-label">Total Outstanding Fine</span>
+        <span class="fine-total-value">₹${total}</span>
+      </div>`;
+  }
+
+  function setDefaultDates() {
+    document.getElementById('calc-return-date').value = todayStr();
+    const past = new Date();
+    past.setDate(past.getDate() - 20);
+    document.getElementById('calc-issue-date').value = past.toISOString().split('T')[0];
+  }
+
+  async function initOptimizer() {
+    await loadSummary();
+    await loadEligUsers();
+    await loadResourceOverview();
+    await loadFineBreakdown();
+    setDefaultDates();
+  }
+
+  initOptimizer();
+</script>
+</body>
+</html>

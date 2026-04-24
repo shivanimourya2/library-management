@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — KGCE Library</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-logo" href="dashboard.html">
+    <div class="nav-logo-icon">📚</div>
+    <div class="nav-logo-text">KGCE <span>Library</span></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="dashboard.html">🏠 Dashboard</a>
+    <a class="nav-link" href="#" onclick="showSection('books')">📖 Browse Books</a>
+    <a class="nav-link" href="#" onclick="showSection('mybooks')">🔖 My Books</a>
+    <a class="nav-link" href="#" onclick="showSection('fines')">💰 My Fines</a>
+    <a class="nav-link" href="optimizer.html">⚡ Optimizer</a>
+</div>
+  <div class="nav-right">
+    <div class="nav-user">Welcome, <span id="nav-name">User</span></div>
+    <button class="btn-logout" onclick="logoutUser()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-lg">
+
+    <!-- SECTION: HOME -->
+    <div id="section-home">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Student Portal</span>
+        <h1 id="welcome-title">Welcome back 👋</h1>
+        <p>Manage your books, check due dates and view your fines.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid anim-2">
+        <div class="stat-card">
+          <div class="stat-icon">📖</div>
+          <div class="stat-value" id="stat-issued">0</div>
+          <div class="stat-label">Books Borrowed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="stat-available">0</div>
+          <div class="stat-label">Books Available</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⚠️</div>
+          <div class="stat-value" id="stat-overdue">0</div>
+          <div class="stat-label">Overdue Books</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="stat-fine">₹0</div>
+          <div class="stat-label">Total Fine Due</div>
+        </div>
+      </div>
+
+      <!-- My Currently Borrowed -->
+      <div class="card anim-3">
+        <h2 style="font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:20px; color:var(--white)">
+          📋 My Borrowed Books
+        </h2>
+        <div id="home-issued-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: BROWSE BOOKS -->
+    <div id="section-books" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Library Catalog</span>
+        <h1>Browse Books</h1>
+        <p>Search and borrow from our collection.</p>
+      </div>
+      <div class="card anim-2">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="book-search" placeholder="Search by title or author..." oninput="renderBooks()"/>
+        </div>
+        <div id="books-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: MY BOOKS -->
+    <div id="section-mybooks" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">My Account</span>
+        <h1>My Borrowed Books</h1>
+        <p>View and return your borrowed books.</p>
+      </div>
+      <div class="card anim-2">
+        <div id="mybooks-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: FINES -->
+    <div id="section-fines" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Fine Management</span>
+        <h1>My Fines</h1>
+        <p>₹5 per day is charged after the 14-day loan period.</p>
+      </div>
+      <div class="card anim-2">
+        <div id="fines-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BORROW CONFIRM MODAL -->
+<div class="modal-overlay" id="borrow-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">📖 Borrow Book</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <p style="color:var(--muted); font-size:0.88rem; margin-bottom:20px">
+      You are about to borrow: <strong id="modal-book-title" style="color:var(--white)"></strong>
+    </p>
+    <p style="color:var(--muted); font-size:0.85rem; margin-bottom:24px">
+      Due date: <strong id="modal-due-date" style="color:var(--gold)"></strong><br>
+      Fine: ₹5/day after due date
+    </p>
+    <div style="display:flex; gap:12px">
+      <button class="btn btn-outline btn-full" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold btn-full" onclick="confirmBorrow()">Confirm Borrow</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  // ── Auth Guard ──
+  const user = getCurrentUser();
+  if (!user || user.role === 'admin') window.location.href = 'index.html';
+
+  document.getElementById('nav-name').textContent = user.name.split(' ')[0];
+  document.getElementById('welcome-title').textContent = `Welcome back, ${user.name.split(' ')[0]} 👋`;
+
+  let selectedBookId = null;
+
+  // ── Section Switcher ──
+  function showSection(name) {
+    ['home','books','mybooks','fines'].forEach(s => {
+      document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
+    });
+    if (name === 'books')   renderBooks();
+    if (name === 'mybooks') renderMyBooks();
+    if (name === 'fines')   renderFines();
+    if (name === 'home')    renderHome();
+  }
+
+  // ── HOME ──
+  async function renderHome() {
+    const issuesAll = await getIssuesApi();
+    const issues = issuesAll.filter(i => i.userId === user.id && !i.returned);
+    const books  = await getBooksApi();
+    const available = books.reduce((a, b) => a + b.available, 0);
+    let totalFine = 0, overdue = 0;
+    issues.forEach(i => {
+      const f = calculateFineSync(i.issueDate);
+      totalFine += f;
+      if (f > 0) overdue++;
+    });
+    document.getElementById('stat-issued').textContent    = issues.length;
+    document.getElementById('stat-available').textContent = available;
+    document.getElementById('stat-overdue').textContent   = overdue;
+    document.getElementById('stat-fine').textContent      = '₹' + totalFine;
+
+    const el = document.getElementById('home-issued-list');
+    if (!issues.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No books borrowed yet. <a href="#" onclick="showSection('books')" style="color:var(--gold)">Browse the catalog</a></p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Book</th><th>Issued</th><th>Due Date</th><th>Fine</th><th>Action</th></tr></thead>
+          <tbody>
+            ${issues.map(i => {
+              const book = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              return `<tr>
+                <td>${book ? book.title : 'Unknown'}</td>
+                <td>${formatDate(i.issueDate)}</td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td>${fine > 0 ? `<span class="badge badge-red">₹${fine}</span>` : `<span class="badge badge-green">None</span>`}</td>
+                <td><button class="btn btn-sm btn-success" onclick="returnBook('${i.id}')">Return</button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── BROWSE BOOKS ──
+  async function renderBooks() {
+    const query = (document.getElementById('book-search')?.value || '').toLowerCase();
+    const books = await getBooksApi(query);
+    const el = document.getElementById('books-list');
+    if (!books.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No books found.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Available</th><th>Action</th></tr></thead>
+          <tbody>
+            ${books.map(b => `<tr>
+              <td><strong style="color:var(--white)">${b.title}</strong></td>
+              <td>${b.author}</td>
+              <td><span class="badge badge-gold">${b.category}</span></td>
+              <td>${b.available > 0 ? `<span class="badge badge-green">${b.available} left</span>` : `<span class="badge badge-red">None</span>`}</td>
+              <td>${b.available > 0
+                ? `<button class="btn btn-sm btn-gold" onclick="openBorrowModal('${b.id}')">Borrow</button>`
+                : `<button class="btn btn-sm btn-outline" disabled>Unavailable</button>`}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── MY BOOKS ──
+  async function renderMyBooks() {
+    const issuesAll = await getIssuesApi();
+    const issues = issuesAll.filter(i => i.userId === user.id);
+    const books  = await getBooksApi();
+    const el = document.getElementById('mybooks-list');
+    if (!issues.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>You haven't borrowed any books yet.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Book</th><th>Author</th><th>Issued</th><th>Due</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>
+            ${issues.map(i => {
+              const book = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              return `<tr>
+                <td><strong style="color:var(--white)">${book ? book.title : 'Unknown'}</strong></td>
+                <td>${book ? book.author : '—'}</td>
+                <td>${formatDate(i.issueDate)}</td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td>${i.returned
+                  ? `<span class="badge badge-muted">Returned</span>`
+                  : fine > 0
+                    ? `<span class="badge badge-red">Overdue</span>`
+                    : `<span class="badge badge-green">Active</span>`}
+                </td>
+                <td>${!i.returned
+                  ? `<button class="btn btn-sm btn-success" onclick="returnBook('${i.id}')">Return</button>`
+                  : '—'}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── FINES ──
+  async function renderFines() {
+    const issuesAll = await getIssuesApi();
+    const issues = issuesAll.filter(i => i.userId === user.id && !i.returned);
+    const books  = await getBooksApi();
+    const el = document.getElementById('fines-list');
+    const withFines = issues.filter(i => calculateFineSync(i.issueDate) > 0);
+    if (!withFines.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><p>No fines! All your books are on time.</p></div>`;
+      return;
+    }
+    let total = 0;
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Book</th><th>Due Date</th><th>Days Overdue</th><th>Fine</th></tr></thead>
+          <tbody>
+            ${withFines.map(i => {
+              const book = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              const days = Math.floor(fine / 5);
+              total += fine;
+              return `<tr>
+                <td><strong style="color:var(--white)">${book ? book.title : 'Unknown'}</strong></td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td><span class="badge badge-yellow">${days} days</span></td>
+                <td><span class="badge badge-red">₹${fine}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:20px; text-align:right; font-size:1rem; color:var(--red); font-weight:700">
+        Total Fine: ₹${total}
+      </div>`;
+  }
+
+  // ── BORROW MODAL ──
+  async function openBorrowModal(bookId) {
+    selectedBookId = bookId;
+    const books = await getBooksApi();
+    const book = books.find(b => b.id === bookId);
+    document.getElementById('modal-book-title').textContent = book.title;
+    document.getElementById('modal-due-date').textContent   = formatDate(dueDateStr(new Date()));
+    document.getElementById('borrow-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('borrow-modal').classList.remove('open');
+    selectedBookId = null;
+  }
+
+  async function confirmBorrow() {
+    try {
+      await borrowBookApi(selectedBookId);
+      closeModal();
+      renderBooks();
+      renderHome();
+      alert('Borrowed successfully!');
+    } catch (e) {
+      closeModal();
+      alert('Error: ' + e.message);
+    }
+  }
+
+  // ── RETURN BOOK ──
+  async function returnBook(issueId) {
+    try {
+      await returnBookApi(issueId);
+      renderHome();
+      renderMyBooks();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  // ── Init ──
+  renderHome();
+</script>
+</body>
+</html>

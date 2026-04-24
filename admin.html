@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — KGCE Library</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-logo" href="admin.html">
+    <div class="nav-logo-icon">📚</div>
+    <div class="nav-logo-text">KGCE <span>Admin</span></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="#" onclick="showSection('home')">🏠 Dashboard</a>
+    <a class="nav-link" href="#" onclick="showSection('books')">📚 Books</a>
+    <a class="nav-link" href="#" onclick="showSection('users')">👥 Users</a>
+    <a class="nav-link" href="#" onclick="showSection('issues')">📋 Issues</a>
+    <a class="nav-link" href="#" onclick="showSection('fines')">💰 Fines</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-user">Logged in as <span>Admin</span></div>
+    <button class="btn-logout" onclick="logoutUser()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-lg">
+
+    <!-- SECTION: HOME -->
+    <div id="section-home">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Admin Panel</span>
+        <h1>Library Dashboard</h1>
+        <p>Overview of the entire library system.</p>
+      </div>
+      <div class="stats-grid anim-2">
+        <div class="stat-card">
+          <div class="stat-icon">📚</div>
+          <div class="stat-value" id="stat-total-books">0</div>
+          <div class="stat-label">Total Books</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-value" id="stat-total-users">0</div>
+          <div class="stat-label">Registered Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-value" id="stat-active-issues">0</div>
+          <div class="stat-label">Active Issues</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="stat-total-fines">₹0</div>
+          <div class="stat-label">Total Fines Pending</div>
+        </div>
+      </div>
+
+      <!-- Recent Issues -->
+      <div class="card anim-3">
+        <h2 style="font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:20px; color:var(--white)">
+          📋 Recent Issues
+        </h2>
+        <div id="recent-issues"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: BOOKS -->
+    <div id="section-books" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Catalog Management</span>
+        <h1>Manage Books</h1>
+        <p>Add, edit or remove books from the library.</p>
+      </div>
+
+      <!-- Add Book Form -->
+      <div class="card card-gold anim-2" style="margin-bottom:24px">
+        <h2 style="font-family:'Playfair Display',serif; font-size:1rem; margin-bottom:20px; color:var(--white)">➕ Add New Book</h2>
+        <div class="alert" id="book-alert"></div>
+        <div class="field-row">
+          <div class="field">
+            <label>Title</label>
+            <div class="input-wrap">
+              <span class="input-icon">📖</span>
+              <input type="text" id="book-title" placeholder="Book title"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Author</label>
+            <div class="input-wrap">
+              <span class="input-icon">✍️</span>
+              <input type="text" id="book-author" placeholder="Author name"/>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Category</label>
+            <div class="input-wrap">
+              <span class="input-icon">🏷️</span>
+              <select id="book-category">
+                <option>Computer Science</option>
+                <option>Electronics</option>
+                <option>Mechanical</option>
+                <option>Civil</option>
+                <option>Mathematics</option>
+                <option>Physics</option>
+                <option>Networking</option>
+                <option>Database</option>
+                <option>Other</option>
+              </select>
+              <span class="select-arrow">▼</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Total Copies</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔢</span>
+              <input type="number" id="book-copies" placeholder="e.g. 5" min="1"/>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>ISBN (optional)</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔖</span>
+            <input type="text" id="book-isbn" placeholder="978-XXXXXXXXXX"/>
+          </div>
+        </div>
+        <button class="btn btn-gold" onclick="addBook()">Add Book →</button>
+      </div>
+
+      <!-- Books List -->
+      <div class="card anim-3">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="admin-book-search" placeholder="Search books..." oninput="renderAdminBooks()"/>
+        </div>
+        <div id="admin-books-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: USERS -->
+    <div id="section-users" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">User Management</span>
+        <h1>Registered Users</h1>
+        <p>View and manage all registered library members.</p>
+      </div>
+      <div class="card anim-2">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="user-search" placeholder="Search users..." oninput="renderUsers()"/>
+        </div>
+        <div id="users-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: ISSUES -->
+    <div id="section-issues" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Issue Management</span>
+        <h1>All Book Issues</h1>
+        <p>Track all borrowed and returned books.</p>
+      </div>
+      <div class="card anim-2">
+        <div id="all-issues-list"></div>
+      </div>
+    </div>
+
+    <!-- SECTION: FINES -->
+    <div id="section-fines" style="display:none">
+      <div class="page-header anim-1">
+        <span class="page-header-label">Fine Management</span>
+        <h1>All Pending Fines</h1>
+        <p>₹5 per day is charged after the 14-day loan period.</p>
+      </div>
+      <div class="card anim-2">
+        <div id="all-fines-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DELETE BOOK MODAL -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🗑️ Delete Book</div>
+      <button class="modal-close" onclick="closeDeleteModal()">✕</button>
+    </div>
+    <p style="color:var(--muted); font-size:0.88rem; margin-bottom:24px">
+      Are you sure you want to delete <strong id="delete-book-title" style="color:var(--white)"></strong>? This cannot be undone.
+    </p>
+    <div style="display:flex; gap:12px">
+      <button class="btn btn-outline btn-full" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger btn-full" onclick="confirmDeleteBook()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  // ── Auth Guard ──
+  const user = getCurrentUser();
+  if (!user || user.role !== 'admin') window.location.href = 'index.html';
+
+  let deleteBookId = null;
+
+  // ── Section Switcher ──
+  function showSection(name) {
+    ['home','books','users','issues','fines'].forEach(s => {
+      document.getElementById('section-' + s).style.display = s === name ? 'block' : 'none';
+    });
+    document.querySelectorAll('.nav-link').forEach((l, i) => {
+      l.classList.toggle('active', i === ['home','books','users','issues','fines'].indexOf(name));
+    });
+    if (name === 'home')   renderHome();
+    if (name === 'books')  renderAdminBooks();
+    if (name === 'users')  renderUsers();
+    if (name === 'issues') renderAllIssues();
+    if (name === 'fines')  renderAllFines();
+  }
+
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.className = `alert alert-${type} show`;
+    el.textContent = msg;
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // ── HOME ──
+  async function renderHome() {
+    const books  = await getBooksApi();
+    const users  = await getUsersApi();
+    const issues = await getIssuesApi();
+    const active = issues.filter(i => !i.returned);
+    let totalFine = 0;
+    active.forEach(i => totalFine += calculateFineSync(i.issueDate));
+
+    document.getElementById('stat-total-books').textContent  = books.length;
+    document.getElementById('stat-total-users').textContent  = users.length;
+    document.getElementById('stat-active-issues').textContent = active.length;
+    document.getElementById('stat-total-fines').textContent  = '₹' + totalFine;
+
+    const recent = issues.slice(-10).reverse();
+    const el = document.getElementById('recent-issues');
+    if (!recent.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No issues yet.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Book</th><th>Issued</th><th>Due</th><th>Status</th></tr></thead>
+          <tbody>
+            ${recent.map(i => {
+              const u = users.find(u => u.id === i.userId);
+              const b = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              return `<tr>
+                <td>${u ? u.name : 'Unknown'}</td>
+                <td>${b ? b.title : 'Unknown'}</td>
+                <td>${formatDate(i.issueDate)}</td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td>${i.returned
+                  ? `<span class="badge badge-muted">Returned</span>`
+                  : fine > 0
+                    ? `<span class="badge badge-red">Overdue</span>`
+                    : `<span class="badge badge-green">Active</span>`}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── BOOKS ──
+  async function addBook() {
+    const title  = document.getElementById('book-title').value.trim();
+    const author = document.getElementById('book-author').value.trim();
+    const cat    = document.getElementById('book-category').value;
+    const copies = parseInt(document.getElementById('book-copies').value);
+    const isbn   = document.getElementById('book-isbn').value.trim();
+    if (!title || !author || !copies) {
+      showAlert('book-alert', '⚠️ Please fill Title, Author and Copies.', 'error'); return;
+    }
+    
+    try {
+      await addBookApi({ title, author, category: cat, total: copies, available: copies, isbn });
+      showAlert('book-alert', '✅ Book added successfully!', 'success');
+      document.getElementById('book-title').value  = '';
+      document.getElementById('book-author').value = '';
+      document.getElementById('book-copies').value = '';
+      document.getElementById('book-isbn').value   = '';
+      renderAdminBooks();
+    } catch (e) {
+      showAlert('book-alert', '⚠️ ' + e.message, 'error');
+    }
+  }
+
+  async function renderAdminBooks() {
+    const query = (document.getElementById('admin-book-search')?.value || '').toLowerCase();
+    const books = await getBooksApi(query);
+    const el = document.getElementById('admin-books-list');
+    if (!books.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><p>No books found.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Total</th><th>Available</th><th>Action</th></tr></thead>
+          <tbody>
+            ${books.map(b => `<tr>
+              <td><strong style="color:var(--white)">${b.title}</strong></td>
+              <td>${b.author}</td>
+              <td><span class="badge badge-gold">${b.category}</span></td>
+              <td>${b.total}</td>
+              <td>${b.available > 0
+                ? `<span class="badge badge-green">${b.available}</span>`
+                : `<span class="badge badge-red">0</span>`}
+              </td>
+              <td><button class="btn btn-sm btn-danger" onclick="openDeleteModal('${b.id}')">Delete</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  async function openDeleteModal(bookId) {
+    deleteBookId = bookId;
+    const books = await getBooksApi();
+    const book = books.find(b => b.id === bookId);
+    document.getElementById('delete-book-title').textContent = book.title;
+    document.getElementById('delete-modal').classList.add('open');
+  }
+
+  function closeDeleteModal() {
+    document.getElementById('delete-modal').classList.remove('open');
+    deleteBookId = null;
+  }
+
+  async function confirmDeleteBook() {
+    try {
+      await deleteBookApi(deleteBookId);
+      closeDeleteModal();
+      renderAdminBooks();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  // ── USERS ──
+  async function renderUsers() {
+    const query = (document.getElementById('user-search')?.value || '').toLowerCase();
+    const users = await getUsersApi(query);
+    const issues = await getIssuesApi();
+    const el = document.getElementById('users-list');
+    if (!users.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><p>No users registered yet.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Type</th><th>Department</th><th>Books Borrowed</th></tr></thead>
+          <tbody>
+            ${users.map(u => {
+              const borrowed = issues.filter(i => i.userId === u.id && !i.returned).length;
+              return `<tr>
+                <td><strong style="color:var(--white)">${u.name}</strong></td>
+                <td>${u.email}</td>
+                <td><span class="badge badge-gold">${u.type}</span></td>
+                <td>${u.dept}</td>
+                <td>${borrowed > 0
+                  ? `<span class="badge badge-yellow">${borrowed} active</span>`
+                  : `<span class="badge badge-muted">None</span>`}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── ALL ISSUES ──
+  async function renderAllIssues() {
+    const issues = await getIssuesApi();
+    const users  = await getUsersApi();
+    const books  = await getBooksApi();
+    const el = document.getElementById('all-issues-list');
+    if (!issues.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>No issues recorded yet.</p></div>`;
+      return;
+    }
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Book</th><th>Issued</th><th>Due</th><th>Fine</th><th>Status</th></tr></thead>
+          <tbody>
+            ${issues.slice().reverse().map(i => {
+              const u    = users.find(u => u.id === i.userId);
+              const b    = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              return `<tr>
+                <td>${u ? u.name : 'Unknown'}</td>
+                <td>${b ? b.title : 'Unknown'}</td>
+                <td>${formatDate(i.issueDate)}</td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td>${fine > 0 && !i.returned
+                  ? `<span class="badge badge-red">₹${fine}</span>`
+                  : `<span class="badge badge-muted">—</span>`}
+                </td>
+                <td>${i.returned
+                  ? `<span class="badge badge-muted">Returned</span>`
+                  : fine > 0
+                    ? `<span class="badge badge-red">Overdue</span>`
+                    : `<span class="badge badge-green">Active</span>`}
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── ALL FINES ──
+  async function renderAllFines() {
+    const issuesAll = await getIssuesApi();
+    const issues = issuesAll.filter(i => !i.returned && calculateFineSync(i.issueDate) > 0);
+    const users  = await getUsersApi();
+    const books  = await getBooksApi();
+    const el = document.getElementById('all-fines-list');
+    if (!issues.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><p>No pending fines!</p></div>`;
+      return;
+    }
+    let total = 0;
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Book</th><th>Due Date</th><th>Days Overdue</th><th>Fine</th></tr></thead>
+          <tbody>
+            ${issues.map(i => {
+              const u    = users.find(u => u.id === i.userId);
+              const b    = books.find(b => b.id === i.bookId);
+              const fine = calculateFineSync(i.issueDate);
+              const days = Math.floor(fine / 5);
+              total += fine;
+              return `<tr>
+                <td><strong style="color:var(--white)">${u ? u.name : 'Unknown'}</strong></td>
+                <td>${b ? b.title : 'Unknown'}</td>
+                <td>${formatDate(i.dueDate)}</td>
+                <td><span class="badge badge-yellow">${days} days</span></td>
+                <td><span class="badge badge-red">₹${fine}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:20px; text-align:right; font-size:1rem; color:var(--red); font-weight:700">
+        Total Pending Fines: ₹${total}
+      </div>`;
+  }
+
+ 
+  renderHome();
+</script>
+</body>
+</html>

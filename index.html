@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — KGCE Library</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .login-wrap {
+      position: relative; z-index: 1;
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 40px 20px;
+    }
+    .login-container { width: 100%; max-width: 460px; }
+
+    .login-brand { text-align: center; margin-bottom: 40px; }
+    .brand-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      border: 2px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin: 0 auto 16px;
+      background: rgba(201,169,79,0.08);
+      box-shadow: 0 0 32px rgba(201,169,79,0.15);
+    }
+    .brand-college {
+      font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; font-weight: 900; color: var(--white);
+    }
+    .brand-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    .login-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 36px;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+    .tab-row {
+      display: flex; gap: 4px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 10px; padding: 4px;
+      margin-bottom: 28px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px; border-radius: 8px; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600;
+      cursor: pointer; transition: all 0.2s; color: var(--muted); background: none;
+    }
+    .tab-btn.active { background: var(--gold); color: var(--navy); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .demo-info {
+      margin-top: 20px; padding: 14px 16px;
+      border-radius: 10px; border: 1px solid var(--border2);
+      background: rgba(255,255,255,0.03);
+      font-size: 0.78rem; color: var(--muted); line-height: 1.8;
+    }
+    .demo-info strong { color: var(--gold); }
+
+    footer {
+      position: relative; z-index: 1;
+      text-align: center; padding: 20px;
+      font-size: 0.72rem; color: rgba(255,255,255,0.18);
+      border-top: 1px solid var(--border2);
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-container">
+
+    <div class="login-brand anim-1">
+      <div class="brand-icon">📚</div>
+      <div class="brand-college">Kokan Gyanpeeth College of Engineering</div>
+      <div class="brand-name">Library Management System</div>
+      <div class="brand-sub">Resource &amp; Fine Optimizer</div>
+    </div>
+
+    <div class="login-card anim-2">
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('user')">User Login</button>
+        <button class="tab-btn" onclick="switchTab('register')">Register</button>
+        <button class="tab-btn" onclick="switchTab('admin')">Admin</button>
+      </div>
+
+      <!-- User Login -->
+      <div class="tab-panel active" id="tab-user">
+        <div class="alert" id="user-alert"></div>
+        <div class="field">
+          <label>Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="login-email" placeholder="yourname@kgce.edu"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="login-pass" placeholder="Enter password"/>
+          </div>
+        </div>
+        <button class="btn btn-gold btn-full" style="margin-top:4px" onclick="loginUser()">Sign In →</button>
+        <div class="demo-info">
+          <strong>Demo Accounts:</strong><br>
+          aarav@kgce.edu / pass123 (Student)<br>
+          suresh@kgce.edu / pass123 (Professor)
+        </div>
+      </div>
+
+      <!-- Register -->
+      <div class="tab-panel" id="tab-register">
+        <div class="alert" id="reg-alert"></div>
+        <div class="field-row">
+          <div class="field">
+            <label>Full Name</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" id="reg-name" placeholder="Full name"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>User Type</label>
+            <div class="input-wrap">
+              <span class="input-icon">🎓</span>
+              <select id="reg-type">
+                <option value="student">Student</option>
+                <option value="professor">Professor</option>
+                <option value="staff">Staff</option>
+                <option value="researcher">Researcher</option>
+              </select>
+              <span class="select-arrow">▼</span>
+            </div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input type="email" id="reg-email" placeholder="yourname@kgce.edu"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Department</label>
+          <div class="input-wrap">
+            <span class="input-icon">🏛️</span>
+            <select id="reg-dept">
+              <option>Computer Engineering</option>
+              <option>Electronics &amp; Telecommunication</option>
+              <option>Mechanical Engineering</option>
+              <option>Civil Engineering</option>
+              <option>Information Technology</option>
+              <option>Electrical Engineering</option>
+            </select>
+            <span class="select-arrow">▼</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="reg-pass" placeholder="Create a password"/>
+          </div>
+        </div>
+        <button class="btn btn-gold btn-full" onclick="registerUser()">Create Account →</button>
+      </div>
+
+      <!-- Admin -->
+      <div class="tab-panel" id="tab-admin">
+        <div class="alert" id="admin-alert"></div>
+        <div class="field">
+          <label>Admin Email</label>
+          <div class="input-wrap">
+            <span class="input-icon">🛡️</span>
+            <input type="email" id="admin-email" placeholder="admin@kgce.edu"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Admin Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="admin-pass" placeholder="Admin password"/>
+          </div>
+        </div>
+        <button class="btn btn-gold btn-full" style="margin-top:4px" onclick="loginAdmin()">Admin Sign In →</button>
+        <div class="demo-info">
+          <strong>Admin Credentials:</strong><br>
+          admin@kgce.edu / admin123
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>© 2025 Kokan Gyanpeeth College of Engineering — Library Management System</footer>
+
+<script src="shared.js"></script>
+<script>
+  // Redirect if already logged in
+  const existing = getCurrentUser();
+  if (existing) {
+    window.location.href = existing.role === 'admin' ? 'admin.html' : 'dashboard.html';
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['user','register','admin'][i] === tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  function showAlert(id, msg, type) {
+    const el = document.getElementById(id);
+    el.className = `alert alert-${type} show`;
+    el.textContent = msg;
+  }
+
+  async function loginUser() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    if (!email || !pass) { showAlert('user-alert', '⚠️ Please enter email and password.', 'error'); return; }
+    
+    try {
+      await loginUserApi(email, pass);
+      window.location.href = 'dashboard.html';
+    } catch (e) {
+      showAlert('user-alert', '❌ Invalid email or password.', 'error');
+    }
+  }
+
+  async function registerUser() {
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-pass').value;
+    const type  = document.getElementById('reg-type').value;
+    const dept  = document.getElementById('reg-dept').value;
+    if (!name || !email || !pass) { showAlert('reg-alert', '⚠️ Please fill all fields.', 'error'); return; }
+    
+    try {
+      await registerUserApi(name, email, pass, type, dept);
+      showAlert('reg-alert', '✅ Account created! You can now log in.', 'success');
+      document.getElementById('reg-name').value  = '';
+      document.getElementById('reg-email').value = '';
+      document.getElementById('reg-pass').value  = '';
+    } catch (e) {
+      showAlert('reg-alert', '⚠️ ' + e.message, 'error');
+    }
+  }
+
+  async function loginAdmin() {
+    const email = document.getElementById('admin-email').value.trim();
+    const pass  = document.getElementById('admin-pass').value;
+    if (!email || !pass) { showAlert('admin-alert', '⚠️ Please enter credentials.', 'error'); return; }
+    
+    try {
+      await loginAdminApi(email, pass);
+      window.location.href = 'admin.html';
+    } catch (e) {
+      showAlert('admin-alert', '❌ Invalid admin credentials.', 'error');
+    }
+  }
+</script>
+</body>
+</html>
