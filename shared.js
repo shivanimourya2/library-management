@@ -36,6 +36,12 @@ async function apiFetch(path, opts = {}) {
     const res = await fetch(API_BASE + path, { ...opts, headers });
     const data = await res.json();
     if (!data.success) {
+      if (data.error === 'Invalid token' || data.error === 'No token provided') {
+        clearToken();
+        clearCurrentUser();
+        window.location.href = 'index.html';
+        throw new Error('Session expired. Please log in again.');
+      }
       throw new Error(data.error || 'API error');
     }
     return data.data;
@@ -76,6 +82,7 @@ async function loginAdminApi(email, password) {
 async function getBooksApi(search = '')    { return await apiGet('/api/books' + (search ? '?search=' + encodeURIComponent(search) : '')); }
 async function addBookApi(data)            { return await apiPost('/api/books', data); }
 async function deleteBookApi(id)           { return await apiDelete('/api/books/' + id); }
+async function getSuggestionsApi(id)      { return await apiGet('/api/books/' + id + '/suggestions'); }
 
 // ----------------------------------------------------------
 //  USERS / ISSUES / FINES
@@ -84,6 +91,7 @@ async function getUsersApi(search = '')    { return await apiGet('/api/users' + 
 async function getIssuesApi()              { return await apiGet('/api/issues'); }
 async function borrowBookApi(bookId)       { return await apiPost('/api/issues', { bookId }); }
 async function returnBookApi(issueId)      { return await apiPatch('/api/issues/' + issueId + '/return'); }
+async function calculateFineApi(userId, daysOverdue, year) { return await apiPost('/api/fines/calculate', { userId, daysOverdue, year }); }
 
 // ----------------------------------------------------------
 //  UTILITY

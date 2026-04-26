@@ -24,7 +24,7 @@
 }
 
 html, body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Playfair Display', serif;
   background: var(--navy);
   color: var(--text);
   min-height: 100vh;
@@ -177,6 +177,15 @@ select option { background: #0f2244; color: var(--white); }
   border: 1px solid var(--border2);
 }
 .btn-outline:hover { background: var(--glass); border-color: var(--border); }
+.year-btn.active {
+  background: var(--gold) !important;
+  color: var(--navy) !important;
+  border-color: var(--gold) !important;
+}
+.senior-note {
+  font-size: 0.75rem; color: var(--gold2); margin-top: 8px; font-style: italic;
+  display: block;
+}
 .btn-danger {
   background: rgba(248,113,113,0.1); color: var(--red);
   border: 1px solid rgba(248,113,113,0.25);

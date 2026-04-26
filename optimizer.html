@@ -189,6 +189,18 @@
           </div>
         </div>
 
+        <!-- Academic Year Override -->
+        <div class="field">
+          <label>Student Year (Discount Test)</label>
+          <div style="display:flex; gap:8px; margin-bottom:10px">
+            <button class="btn btn-sm btn-outline year-btn active" data-year="FE" onclick="selectCalcYear('FE', this)">FE</button>
+            <button class="btn btn-sm btn-outline year-btn" data-year="SE" onclick="selectCalcYear('SE', this)">SE</button>
+            <button class="btn btn-sm btn-outline year-btn" data-year="TE" onclick="selectCalcYear('TE', this)">TE</button>
+            <button class="btn btn-sm btn-outline year-btn" data-year="BE" onclick="selectCalcYear('BE', this)">BE</button>
+          </div>
+          <p class="senior-note" id="calc-discount-note" style="display:none">Seniors (SE, TE, BE) are eligible for a 50% discount on calculated fines.</p>
+        </div>
+
         <button class="btn btn-gold btn-full" onclick="calculateFineManual()">Calculate Fine →</button>
         <div id="fine-result" class="result-box" style="margin-top:20px"></div>
       </div>
@@ -303,7 +315,19 @@
       </div>`;
   }
 
-  function calculateFineManual() {
+  let selectedCalcYear = 'FE';
+  function selectCalcYear(year, btn) {
+    document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('calc-discount-note').style.display = (year !== 'FE') ? 'block' : 'none';
+    
+    // Auto-calculate if result is already showing to show instant feedback
+    if (document.getElementById('fine-result').classList.contains('show')) {
+      calculateFineManual();
+    }
+  }
+
+  async function calculateFineManual() {
     const bookName  = document.getElementById('calc-book-name').value.trim();
     const issueStr  = document.getElementById('calc-issue-date').value;
     const returnStr = document.getElementById('calc-return-date').value;
@@ -327,44 +351,55 @@
     }
 
     const overdueDays = Math.max(0, Math.floor((returnDate - dueDate) / (1000 * 60 * 60 * 24)));
-    const fine        = overdueDays * FINE_PER_DAY;
     const loanDays    = Math.floor((returnDate - issueDate) / (1000 * 60 * 60 * 24));
 
-    el.className = `result-box ${fine > 0 ? 'result-box-error' : 'result-box-success'} show`;
-    el.innerHTML = `
-      <div class="result-title">${fine > 0 ? '💰 Fine Calculated' : '✅ No Fine'}</div>
-      <div class="result-row">
-        <span class="result-row-label">📖 Book Name</span>
-        <span class="result-row-value">${bookName || 'Not specified'}</span>
-      </div>
-      <div class="result-row">
-        <span class="result-row-label">Issue Date</span>
-        <span class="result-row-value">${formatDate(issueStr)}</span>
-      </div>
-      <div class="result-row">
-        <span class="result-row-label">Due Date</span>
-        <span class="result-row-value">${formatDate(dueDate.toISOString().split('T')[0])}</span>
-      </div>
-      <div class="result-row">
-        <span class="result-row-label">Return Date</span>
-        <span class="result-row-value">${formatDate(returnStr)}</span>
-      </div>
-      <div class="result-row">
-        <span class="result-row-label">Total Loan Days</span>
-        <span class="result-row-value">${loanDays} days</span>
-      </div>
-      <div class="result-row">
-        <span class="result-row-label">Overdue Days</span>
-        <span class="result-row-value">${overdueDays} days</span>
-      </div>
-      <div class="result-row">
-        <span class="result-row-label">Fine Rate</span>
-        <span class="result-row-value">₹${FINE_PER_DAY}/day</span>
-      </div>
-      <div class="fine-total">
-        <span class="fine-total-label">Total Fine</span>
-        <span class="fine-total-value ${fine === 0 ? 'fine-zero' : ''}">₹${fine}</span>
-      </div>`;
+    // Force read the active year from the UI to ensure synchronization
+    const activeBtn = document.querySelector('.year-btn.active');
+    const yearToUse = activeBtn ? activeBtn.getAttribute('data-year') : 'FE';
+
+    try {
+      const res = await calculateFineApi(user.id, overdueDays, yearToUse);
+      const fine = res.fine;
+
+      el.className = `result-box ${fine > 0 ? 'result-box-error' : 'result-box-success'} show`;
+      el.innerHTML = `
+        <div class="result-title">${fine > 0 ? '💰 Fine Calculated (Prolog Engine)' : '✅ No Fine'}</div>
+        <div class="result-row">
+          <span class="result-row-label">📖 Book Name</span>
+          <span class="result-row-value">${bookName || 'Not specified'}</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Academic Year</span>
+          <span class="result-row-value">${yearToUse} ${yearToUse !== 'FE' ? '(50% Discount Applied)' : ''}</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Issue Date</span>
+          <span class="result-row-value">${formatDate(issueStr)}</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Due Date</span>
+          <span class="result-row-value">${formatDate(dueDate.toISOString().split('T')[0])}</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Return Date</span>
+          <span class="result-row-value">${formatDate(returnStr)}</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Total Loan Days</span>
+          <span class="result-row-value">${loanDays} days</span>
+        </div>
+        <div class="result-row">
+          <span class="result-row-label">Overdue Days</span>
+          <span class="result-row-value">${overdueDays} days</span>
+        </div>
+        <div class="fine-total" style="margin-top:16px; padding:16px; border-radius:10px; background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.25); display:flex; justify-content:space-between; align-items:center;">
+          <span class="fine-total-label" style="font-size:0.85rem; color:var(--muted)">Total Fine</span>
+          <span class="fine-total-value" style="font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:900; color:${fine > 0 ? 'var(--red)' : 'var(--green)'}">₹${fine}</span>
+        </div>`;
+    } catch (err) {
+      el.className = 'result-box result-box-error show';
+      el.innerHTML = `<div class="result-title">❌ Error</div><p style="font-size:0.84rem;color:var(--red)">${err.message}</p>`;
+    }
   }
 
   async function loadResourceOverview() {

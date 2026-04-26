@@ -117,20 +117,43 @@
 <!-- BORROW CONFIRM MODAL -->
 <div class="modal-overlay" id="borrow-modal">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">📖 Borrow Book</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+    <!-- Initial Content -->
+    <div id="borrow-initial-content">
+      <div class="modal-header">
+        <div class="modal-title">📖 Borrow Book</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <p style="color:var(--muted); font-size:0.88rem; margin-bottom:20px">
+        You are about to borrow: <strong id="modal-book-title" style="color:var(--white)"></strong>
+      </p>
+      <p style="color:var(--muted); font-size:0.85rem; margin-bottom:24px">
+        Due date: <strong id="modal-due-date" style="color:var(--gold)"></strong><br>
+        Fine: ₹5/day after due date
+      </p>
+      <div style="display:flex; gap:12px">
+        <button class="btn btn-outline btn-full" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-gold btn-full" onclick="confirmBorrow()">Confirm Borrow</button>
+      </div>
+
+      <!-- Suggestions on Initial Card -->
+      <div id="initial-recommendations-container" style="display:none; margin-top:24px; border-top:1px solid var(--border); padding-top:20px">
+        <p style="font-size:0.72rem; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px">Related books you might like...</p>
+        <div id="initial-recommendations-list" style="display:flex; flex-direction:column; gap:8px"></div>
+      </div>
     </div>
-    <p style="color:var(--muted); font-size:0.88rem; margin-bottom:20px">
-      You are about to borrow: <strong id="modal-book-title" style="color:var(--white)"></strong>
-    </p>
-    <p style="color:var(--muted); font-size:0.85rem; margin-bottom:24px">
-      Due date: <strong id="modal-due-date" style="color:var(--gold)"></strong><br>
-      Fine: ₹5/day after due date
-    </p>
-    <div style="display:flex; gap:12px">
-      <button class="btn btn-outline btn-full" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold btn-full" onclick="confirmBorrow()">Confirm Borrow</button>
+
+    <!-- Success Content -->
+    <div id="borrow-success-content" style="display:none; text-align:center; padding:10px 0">
+       <div style="font-size:3rem; margin-bottom:16px">✅</div>
+       <h3 style="color:var(--white); font-family:'Playfair Display',serif; margin-bottom:8px">Borrowed Successfully!</h3>
+       <p style="color:var(--muted); font-size:0.85rem; margin-bottom:24px">The book has been added to your collection.</p>
+       
+       <div id="recommendations-container" style="display:none; text-align:left; border-top:1px solid var(--border); padding-top:20px; margin-top:10px">
+         <p style="font-size:0.75rem; color:var(--gold); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px">You might also like...</p>
+         <div id="recommendations-list" style="display:flex; flex-direction:column; gap:8px"></div>
+       </div>
+
+       <button class="btn btn-gold btn-full" style="margin-top:24px" onclick="closeModal()">Great, thanks!</button>
     </div>
   </div>
 </div>
@@ -313,7 +336,38 @@
     const book = books.find(b => b.id === bookId);
     document.getElementById('modal-book-title').textContent = book.title;
     document.getElementById('modal-due-date').textContent   = formatDate(dueDateStr(new Date()));
+    
+    // Reset modal state
+    document.getElementById('borrow-initial-content').style.display = 'block';
+    document.getElementById('borrow-success-content').style.display = 'none';
+    document.getElementById('initial-recommendations-container').style.display = 'none';
+    
     document.getElementById('borrow-modal').classList.add('open');
+
+    // Fetch and show suggestions
+    try {
+      const suggestions = await getSuggestionsApi(bookId);
+      const container = document.getElementById('initial-recommendations-container');
+      const list = document.getElementById('initial-recommendations-list');
+      
+      if (suggestions && suggestions.length > 0) {
+        list.innerHTML = suggestions.map(s => `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03)">
+            <div style="display:flex; align-items:center; gap:10px">
+               <span style="font-size:1.1rem">📖</span>
+               <div style="display:flex; flex-direction:column">
+                 <span style="color:var(--white); font-size:0.82rem; font-weight:600">${s.title}</span>
+                 <span style="color:var(--muted); font-size:0.75rem">${s.author}</span>
+               </div>
+            </div>
+            <button class="btn btn-sm btn-gold" onclick="borrowSuggestion('${s.id}', this)" style="padding:4px 10px; font-size:0.7rem">Borrow</button>
+          </div>
+        `).join('');
+        container.style.display = 'block';
+      }
+    } catch (e) {
+      console.error('Suggestions error:', e);
+    }
   }
 
   function closeModal() {
@@ -323,14 +377,69 @@
 
   async function confirmBorrow() {
     try {
-      await borrowBookApi(selectedBookId);
-      closeModal();
+      const res = await borrowBookApi(selectedBookId);
+      
       renderBooks();
       renderHome();
-      alert('Borrowed successfully!');
+
+      // Show success content
+      document.getElementById('borrow-initial-content').style.display = 'none';
+      document.getElementById('borrow-success-content').style.display = 'block';
+
+      // Show recommendations if any
+      const container = document.getElementById('recommendations-container');
+      const list = document.getElementById('recommendations-list');
+      if (res.suggestions && res.suggestions.length > 0) {
+        list.innerHTML = res.suggestions.map(s => `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.03)">
+            <div style="display:flex; align-items:center; gap:10px">
+               <span style="font-size:1.1rem">📖</span>
+               <div style="display:flex; flex-direction:column">
+                 <span style="color:var(--white); font-size:0.82rem; font-weight:600">${s.title}</span>
+                 <span style="color:var(--muted); font-size:0.75rem">${s.author}</span>
+               </div>
+            </div>
+            <button class="btn btn-sm btn-gold" onclick="borrowSuggestion('${s.id}', this)" style="padding:4px 10px; font-size:0.7rem">Borrow</button>
+          </div>
+        `).join('');
+        container.style.display = 'block';
+      } else {
+        container.style.display = 'none';
+      }
+
     } catch (e) {
-      closeModal();
       alert('Error: ' + e.message);
+      closeModal();
+    }
+  }
+
+  async function borrowSuggestion(bookId, btn) {
+    try {
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳...';
+      
+      await borrowBookApi(bookId);
+      
+      btn.textContent = '✅';
+      btn.className = 'btn btn-sm btn-success';
+      btn.style.background = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      
+      // Refresh the background data
+      await renderBooks();
+      await renderHome();
+      
+      // Optional: hide the suggestion after a delay
+      setTimeout(() => {
+        btn.parentElement.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      }, 1000);
+      
+    } catch (e) {
+      alert('Error: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Borrow';
     }
   }
 
